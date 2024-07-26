@@ -1,20 +1,37 @@
 import requests
 import urllib.parse
+import os
 
+from dotenv import load_dotenv
+from flask_cors import CORS
 from datetime import datetime, timedelta
 from flask import Flask, redirect, request, jsonify, session, render_template
 from PIL import Image, ImageFont, ImageDraw
 
-app = Flask(__name__)
-app.secret_key = '38jfknkdls-93fjkj-3920jfkldsjfkdk993'
+load_dotenv()
 
-CLIENT_ID = '5c33963460a1403ba93c2add750bde6d'
-CLIENT_SECRET = '37a8cce6c8a04b29a2b8049326947726'
+app = Flask(__name__)
+
+CORS(app)
+app.config['DEBUG'] = os.environ.get('FLASK_DEBUG')
+
+app.secret_key = os.getenv("SECRET_KEY")
+
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REDIRECT_URI = 'http://localhost:5000/callback'
 
 AUTH_URL = 'https://accounts.spotify.com/authorize'
 TOKEN_URL = 'https://accounts.spotify.com/api/token'
 API_BASE_URL = 'https://api.spotify.com/v1/'
+
+def create_row(idx, len, artists):
+    row = ''
+    for i in range(len):
+        row += artists[idx]
+        row += '   '
+        idx += 3
+    return(row)
 
 @app.route('/')
 def index():
@@ -60,13 +77,6 @@ def callback():
 
         return redirect('/artists')
 
-def create_row(idx, len, artists):
-    row = ''
-    for i in range(len):
-        row += artists[idx]
-        row += '   '
-        idx += 3
-    return(row)
 
 @app.route('/artists')
 def get_artists():
@@ -92,29 +102,29 @@ def get_artists():
     for deta in data:
         artists.append(deta['name'])
     
-    img = Image.open('sunset.png')
+    img = Image.open('static/sunset.png')
     draw = ImageDraw.Draw(img)
 
 #header
-    font = ImageFont.truetype("title.otf", 90)
+    font = ImageFont.truetype("fonts/title.otf", 90)
     draw.text((330, 60), 'MEFEST', (255,255,255), font=font)
 
 #headliners
-    font = ImageFont.truetype("Bebas-Regular.otf", 60)
+    font = ImageFont.truetype("fonts/Bebas-Regular.otf", 60)
     fheadl = 200 #height of first headliner
     for i in range(3):
         draw.text((50, fheadl), artists[i], (255,255,255), font=font)
         fheadl += 260
 
 #subheadliners
-    font = ImageFont.truetype("Bebas-Regular.otf", 35)
+    font = ImageFont.truetype("fonts/Bebas-Regular.otf", 35)
     fsubheadl = 280
     for i in range(3):
         draw.text((50,fsubheadl), create_row(3+i,3,artists), (255,255,255), font=font)
         fsubheadl += 260
 
 #third row
-    font = ImageFont.truetype("Bebas-Regular.otf", 25)
+    font = ImageFont.truetype("fonts/Bebas-Regular.otf", 25)
     ftrow = 330
     for i in range(3):
         draw.text((50,ftrow), create_row(12+i,4,artists), (255,255,255), font=font)
@@ -130,9 +140,7 @@ def get_artists():
     img.save('static/lineup.png')
 
     return render_template('main.html', artists=artists)
-    
-    
-    
+
 
 @app.route('/refresh_token')
 def refresh_token():
@@ -156,4 +164,4 @@ def refresh_token():
         return redirect('/artists')
     
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    app.run()
